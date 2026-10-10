@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>VERSUS ARENA</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body { font-family: -apple-system, 'Segoe UI', sans-serif; background: #05050c; color: #fff; overflow: hidden; touch-action: manipulation; user-select: none; }
+  .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; }
+  .hidden { display: none !important; }
+
+  /* ===== SELECT ===== */
+  #selectScreen { padding: 18px 14px; overflow-y: auto; }
+  #selectScreen h1 { font-size: 34px; font-weight: 900; letter-spacing: 6px; margin: 10px 0 2px;
+    background: linear-gradient(90deg,#f43f5e,#facc15,#22d3ee); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  #pickLabel { color: #888; font-size: 14px; margin-bottom: 14px; letter-spacing: 1px; }
+  #grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 480px; }
+  .card { background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.12); border-radius: 14px;
+    padding: 12px; cursor: pointer; transition: transform 0.1s; }
+  .card:active { transform: scale(0.96); }
+  .card .orb { width: 46px; height: 46px; border-radius: 50%; margin-bottom: 8px;
+    box-shadow: 0 0 18px currentColor; background: radial-gradient(circle at 35% 35%, #fff8, transparent 50%), currentColor; }
+  .card .nm { font-weight: 900; font-size: 14px; letter-spacing: 1px; }
+  .card .ds { font-size: 11px; color: #999; margin: 4px 0; min-height: 28px; }
+  .card .st { font-size: 11px; color: #bbb; font-variant-numeric: tabular-nums; }
+  .card.p1 { border-color: #22d3ee; box-shadow: 0 0 16px #22d3ee66; }
+  .card.p2 { border-color: #f43f5e; box-shadow: 0 0 16px #f43f5e66; }
+  .card .tag { font-size: 10px; font-weight: 900; letter-spacing: 2px; margin-top: 6px; height: 14px; }
+  .card.p1 .tag { color: #22d3ee; } .card.p2 .tag { color: #f43f5e; }
+  #startBtn { margin: 16px 0 30px; padding: 15px 46px; font-size: 18px; font-weight: 900; letter-spacing: 3px;
+    border: none; border-radius: 30px; cursor: pointer; color: #fff;
+    background: linear-gradient(90deg,#f43f5e,#f97316); box-shadow: 0 0 24px #f43f5e88; opacity: 0.35; }
+  #startBtn.ready { opacity: 1; animation: pulse 1.4s infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 40px #f43f5ecc; } }
+
+  /* ===== BATTLE ===== */
+  #battleScreen { justify-content: flex-start; }
+  #hud { width: 100%; max-width: 640px; display: flex; gap: 8px; padding: 10px 12px 4px; z-index: 5; }
+  .hudside { flex: 1; }
+  .hudside.right { text-align: right; }
+  .hname { font-weight: 900; font-size: 13px; letter-spacing: 1px; }
+  .hpbar { height: 14px; background: #222; border-radius: 7px; margin-top: 4px; overflow: hidden; border: 1px solid #444; }
+  .hpfill { height: 100%; width: 100%; border-radius: 7px; transition: width 0.25s; }
+  .right .hpfill { float: right; }
+  .meterbar { height: 6px; background: #1a1a2e; border-radius: 3px; margin-top: 4px; overflow: hidden; }
+  .meterfill { height: 100%; width: 0%; background: linear-gradient(90deg,#22d3ee,#a78bfa); transition: width 0.25s; }
+  .right .meterfill { float: right; background: linear-gradient(90deg,#f43f5e,#f97316); }
+  .mlabel { font-size: 10px; color: #888; letter-spacing: 1px; }
+  #arenaWrap { position: relative; width: 100%; max-width: 640px; flex: 1; }
+  #arena { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #log { width: 100%; max-width: 640px; height: 118px; overflow-y: auto; padding: 8px 14px;
+    font-size: 12.5px; line-height: 1.55; background: rgba(0,0,0,0.55); border-top: 1px solid #222; z-index: 5; }
+  #log div { animation: login 0.25s; }
+  @keyframes login { from { opacity: 0; transform: translateY(4px); } }
+  #quitBtn { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 6;
+    background: rgba(0,0,0,0.5); color: #777; border: 1px solid #333; border-radius: 14px;
+    font-size: 11px; padding: 4px 12px; cursor: pointer; }
+
+  /* ===== OVERLAYS ===== */
+  .overlay { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; background: rgba(0,0,0,0.72); text-align: center; padding: 20px; }
+  #vsNames { font-size: 30px; font-weight: 900; letter-spacing: 3px; }
+  #vsPowers { color: #999; margin: 10px 0 20px; font-size: 15px; font-variant-numeric: tabular-nums; }
+  #fightWord { font-size: 64px; font-weight: 900; letter-spacing: 10px; color: #f43f5e;
+    text-shadow: 0 0 40px #f43f5e; animation: fightpop 0.5s; }
+  @keyframes fightpop { from { transform: scale(2.2); opacity: 0; } }
+  #koWord { font-size: 84px; font-weight: 900; letter-spacing: 12px; color: #fff;
+    text-shadow: 0 0 60px #f43f5e, 0 0 120px #f43f5e; animation: kopop 0.6s; }
+  @keyframes kopop { 0% { transform: scale(3); opacity: 0; } 60% { transform: scale(0.95); opacity: 1; } }
+  #koStats { margin: 16px 0 22px; color: #bbb; font-size: 14px; line-height: 1.8; }
+  .obtn { padding: 13px 34px; margin: 6px; font-size: 16px; font-weight: 800; letter-spacing: 1px;
+    border-radius: 26px; border: none; cursor: pointer; color: #fff; background: linear-gradient(90deg,#7c3aed,#db2777); }
+  .obtn.ghost { background: #222; border: 1px solid #444; }
+</style>
+</head>
+<body>
+
+<!-- SELECT -->
+<div id="selectScreen" class="screen">
+  <h1>VERSUS ARENA</h1>
+  <div id="pickLabel">CHOOSE YOUR FIGHTER</div>
+  <div id="grid"></div>
+  <button id="startBtn">START BATTLE</button>
+</div>
+
+<!-- BATTLE -->
+<div id="battleScreen" class="screen hidden">
+  <div id="hud">
+    <div class="hudside" id="hud1"></div>
+    <div class="hudside right" id="hud2"></div>
+  </div>
+  <div id="arenaWrap"><canvas id="arena"></canvas><button id="quitBtn">✕ quit</button></div>
+  <div id="log"></div>
+</div>
+
+<!-- INTRO / KO overlays -->
+<div id="introOverlay" class="overlay hidden">
+  <div id="vsNames"></div><div id="vsPowers"></div><div id="fightWord" class="hidden">FIGHT!</div>
+</div>
+<div id="koOverlay" class="overlay hidden">
+  <div id="koWord">K.O.</div>
+  <div id="koStats"></div>
+  <div><button class="obtn" id="rematchBtn">REMATCH</button>
+  <button class="obtn ghost" id="changeBtn">CHANGE FIGHTERS</button></div>
+</div>
+
+<script>
+// ================= ROSTER =================
+const FIGHTERS = [
+  { id:'volt',    name:'VOLT REVENANT',  color:'#22d3ee', hp:1050, power:118, defense:18, speed:9.2, special:'STORMFALL BARRAGE', desc:'A living thunderstorm. Fastest hands in the arena.' },
+  { id:'cinder',  name:'CINDER WRAITH',  color:'#ef4444', hp:1000, power:112, defense:16, speed:9.8, special:'INFERNO SPIRAL',    desc:'Burns faster than eyes can follow.' },
+  { id:'nova',    name:'NOVA STRIKER',   color:'#facc15', hp:1300, power:126, defense:24, speed:6.8, special:'NOVA ERUPTION',      desc:'Harnesses starfire. The balanced annihilator.' },
+  { id:'abyss',   name:'ABYSS WALKER',   color:'#a78bfa', hp:1450, power:122, defense:30, speed:5.9, special:'EVENT HORIZON',      desc:'Where its shadow falls, light gives up.' },
+  { id:'glacier', name:'GLACIER MONARCH',color:'#93c5fd', hp:1650, power:116, defense:38, speed:5.2, special:'ABSOLUTE ZERO',     desc:'Patience carved from ice. Punishes mistakes.' },
+  { id:'iron',    name:'IRON COLOSSUS',  color:'#f97316', hp:1900, power:132, defense:42, speed:4.1, special:'SEISMIC SLAM',       desc:'A walking fortress. Hits like a falling moon.' },
+];
+const HIT_QUIPS = [
+  'A direct hit!', 'It connects cleanly!', 'No wasted motion — it lands!',
+  'The arena trembles!', 'A brutal exchange!', 'Right on the mark!',
+];
+const MISS_FLAVOR = ['sidesteps at the last instant!', 'weaves through the strike!', 'blurs out of the way!'];
+
+// ================= STATE =================
+let pickPhase = 1, pick1 = null, pick2 = null;
+let P1 = null, P2 = null;
+let particles = [], floats = [], beams = [];
+let shakeT = 0, shakeMag = 0, timescale = 1, slowmoT = 0;
+let battleTime = 0, battleOver = false, rafId = null;
+const canvas = document.getElementById('arena');
+const ctx = canvas.getContext('2d');
+let W = 0, H = 0, DPR = 1;
+
+function resize() {
+  const r = canvas.parentElement.getBoundingClientRect();
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = r.width; H = r.height;
+  canvas.width = W * DPR; canvas.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (P1) { P1.baseX = W * 0.27; P2.baseX = W * 0.73; P1.y = P2.y = H * 0.55; }
+}
+window.addEventListener('resize', resize);
+
+// ================= SELECT SCREEN =================
+function buildGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  FIGHTERS.forEach((f, i) => {
+    const el = document.createElement('div');
+    el.className = 'card' + (pick1 === i ? ' p1' : '') + (pick2 === i ? ' p2' : '');
+    el.innerHTML = `<div class="orb" style="color:${f.color}"></div>
+      <div class="nm" style="color:${f.color}">${f.name}</div>
+      <div class="ds">${f.desc}</div>
+      <div class="st">HP ${f.hp} · ATK ${f.power} · SPD ${f.speed}</div>
+      <div class="tag">${pick1 === i ? '◀ YOU' : pick2 === i ? 'FOE ▶' : ''}</div>`;
+    el.onclick = () => {
+      if (pickPhase === 1) { pick1 = i; pickPhase = 2; document.getElementById('pickLabel').textContent = 'CHOOSE YOUR OPPONENT'; }
+      else { if (i === pick1) return; pick2 = i; }
+      buildGrid();
+      const btn = document.getElementById('startBtn');
+      if (pick1 !== null && pick2 !== null) { btn.classList.add('ready'); }
+    };
+    grid.appendChild(el);
+  });
+}
+document.getElementById('startBtn').onclick = () => {
+  if (pick1 === null || pick2 === null) return;
+  startBattle(FIGHTERS[pick1], FIGHTERS[pick2]);
+};
+document.getElementById('quitBtn').onclick = () => { stopBattle(); show('selectScreen'); };
+document.getElementById('rematchBtn').onclick = () => startBattle(P1.base, P2.base);
+document.getElementById('changeBtn').onclick = () => { stopBattle(); show('selectScreen'); };
+function show(id) {
+  ['selectScreen','battleScreen'].forEach(s => document.getElementById(s).classList.toggle('hidden', s !== id));
+  if (id === 'selectScreen') { pickPhase = 1; pick1 = pick2 = null;
+    document.getElementById('pickLabel').textContent = 'CHOOSE YOUR FIGHTER';
+    document.getElementById('startBtn').classList.remove('ready'); buildGrid(); }
+}
+
+// ================= BATTLE SETUP =================
+function mkFighter(base, isP1) {
+  return { base, isP1, name: base.name, color: base.color,
+    hp: base.hp, maxhp: base.hp, power: base.power, defense: base.defense, speed: base.speed,
+    x: 0, y: 0, baseX: 0, kx: 0, meter: 0, cooldown: 1 + Math.random(),
+    state: 'idle', stateT: 0, targetX: 0, isSpecial: false, dmgDealt: 0, hits: 0 };
+}
+function log(msg, color) {
+  const logEl = document.getElementById('log');
+  const d = document.createElement('div');
+  if (color) d.style.color = color;
+  d.textContent = msg;
+  logEl.prepend(d);
+  while (logEl.children.length > 40) logEl.lastChild.remove();
+}
+function hudHTML(f) {
+  const pct = Math.max(0, f.hp / f.maxhp * 100);
+  const hpColor = pct > 50 ? '#4ade80' : pct > 25 ? '#facc15' : '#ef4444';
+  return `<div class="hname" style="color:${f.color}">${f.name}</div>
+    <div class="hpbar"><div class="hpfill" style="width:${pct}%;background:${hpColor}"></div></div>
+    <div class="meterbar"><div class="meterfill" style="width:${Math.min(100,f.meter)}%"></div></div>
+    <div class="mlabel">${f.meter >= 100 ? '★ SPECIAL READY ★' : 'SP ' + Math.floor(f.meter)}</div>`;
+}
+function refreshHUD() {
+  document.getElementById('hud1').innerHTML = hudHTML(P1);
+  document.getElementById('hud2').innerHTML = hudHTML(P2);
+}
+
+function startBattle(b1, b2) {
+  show('battleScreen');
+  document.getElementById('koOverlay').classList.add('hidden');
+  document.getElementById('log').innerHTML = '';
+  P1 = mkFighter(b1, true); P2 = mkFighter(b2, false);
+  particles = []; floats = []; beams = [];
+  battleTime = 0; battleOver = false; timescale = 1; slowmoT = 0; shakeT = 0;
+  resize();
+  P1.baseX = W * 0.27; P2.baseX = W * 0.73;
+  P1.x = P1.baseX; P2.x = P2.baseX; P1.y = P2.y = H * 0.55;
+  refreshHUD();
+  // VS splash
+  const ov = document.getElementById('introOverlay');
+  ov.classList.remove('hidden');
+  document.getElementById('vsNames').innerHTML =
+    `<span style="color:${P1.color}">${P1.name}</span> <span style="color:#666">VS</span> <span style="color:${P2.color}">${P2.name}</span>`;
+  document.getElementById('vsPowers').textContent =
+    `POWER ${P1.power} vs ${P2.power} — first to zero HP loses`;
+  const fw = document.getElementById('fightWord');
+  setTimeout(() => { fw.classList.remove('hidden'); if (navigator.vibrate) navigator.vibrate(60); }, 1100);
+  setTimeout(() => {
+    ov.classList.add('hidden'); fw.classList.add('hidden');
+    log(`${P1.name} and ${P2.name} enter the arena.`, '#888');
+    log(`The air itself seems to hold its breath…`, '#888');
+    if (rafId) cancelAnimationFrame(rafId);
+    lastT = performance.now();
+    rafId = requestAnimationFrame(loop);
+  }, 2100);
+}
+function stopBattle() {
+  if (rafId) cancelAnimationFrame(rafId);
+  rafId = null;
+  document.getElementById('koOverlay').classList.add('hidden');
+  document.getElementById('introOverlay').classList.add('hidden');
+}
+
+// ================= COMBAT =================
+const cdFor = f => Math.max(0.55, 2.3 - f.speed * 0.16);
+function startAttack(f, foe) {
+  const special = f.meter >= 100;
+  if (special) f.meter = 0;
+  f.state = 'dash'; f.stateT = 0; f.isSpecial = special;
+  f.targetX = foe.x + (f.isP1 ? -64 : 64);
+}
+function spawnBurst(x, y, color, n, spd) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, s = (0.3 + Math.random() * 0.7) * spd;
+    particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.5 + Math.random() * 0.5, t: 0, color, r: 2 + Math.random() * 4 });
+  }
+}
+function addFloat(x, y, txt, color, big) {
+  floats.push({ x, y, txt, color, t: 0, life: big ? 1.4 : 0.9, big: !!big });
+}
+function shake(mag, dur) { shakeMag = Math.max(shakeMag, mag); shakeT = Math.max(shakeT, dur); }
+
+function impact(f, foe) {
+  const dir = f.isP1 ? 1 : -1;
+  // 8% dodge
+  if (Math.random() < 0.08) {
+    addFloat(foe.x, foe.y - 70, 'DODGED!', '#fff', false);
+    log(`${foe.name} ${MISS_FLAVOR[Math.floor(Math.random() * MISS_FLAVOR.length)]}`, '#999');
+    return;
+  }
+  let dmg = f.power * (0.85 + Math.random() * 0.3);
+  dmg = Math.max(8, dmg - foe.defense * 0.55);
+  const crit = Math.random() < 0.12;
+  if (crit) dmg *= 1.6;
+  if (f.isSpecial) {
+    dmg *= 2.6;
+    beams.push({ x1: f.x, y1: f.y, x2: foe.x, y2: foe.y, t: 0.55, max: 0.55, color: f.color, w: 34 });
+    shake(14, 0.5);
+    addFloat(foe.x, foe.y - 110, f.base.special + '!', f.color, true);
+    log(`${f.name} unleashes ${f.base.special}!`, f.color);
+    spawnBurst(foe.x, foe.y, f.color, 46, 420);
+    spawnBurst(foe.x, foe.y, '#ffffff', 20, 300);
+  } else {
+    spawnBurst((f.x + foe.x) / 2, foe.y, f.color, crit ? 30 : 16, 260);
+    shake(crit ? 9 : 4, crit ? 0.3 : 0.15);
+  }
+  dmg = Math.round(dmg);
+  foe.hp = Math.max(0, foe.hp - dmg);
+  foe.kx = dir * (f.isSpecial ? 70 : 34);
+  f.dmgDealt += dmg; f.hits++;
+  f.meter = Math.min(100, f.meter + 10);
+  foe.meter = Math.min(100, foe.meter + 14);
+  addFloat(foe.x, foe.y - 70, (crit ? 'CRIT ' : '') + dmg, crit ? '#facc15' : '#fff', crit);
+  if (!f.isSpecial && Math.random() < 0.5)
+    log(`${HIT_QUIPS[Math.floor(Math.random() * HIT_QUIPS.length)]} ${f.name} deals ${dmg}.`, '#ccc');
+  if (navigator.vibrate) navigator.vibrate(f.isSpecial ? 90 : 25);
+  refreshHUD();
+  if (foe.hp <= 0 && !battleOver) doKO(f, foe);
+}
+
+function doKO(winner, loser) {
+  battleOver = true;
+  slowmoT = 1.5; timescale = 0.22;
+  spawnBurst(loser.x, loser.y, loser.color, 70, 520);
+  spawnBurst(loser.x, loser.y, '#ffffff', 30, 380);
+  shake(18, 0.8);
+  log(`${loser.name} can't continue!`, '#f43f5e');
+  setTimeout(() => {
+    const ov = document.getElementById('koOverlay');
+    ov.classList.remove('hidden');
+    document.getElementById('koStats').innerHTML =
+      `<span style="color:${winner.color};font-weight:900;font-size:20px">${winner.name} WINS</span><br>` +
+      `Time: ${battleTime.toFixed(1)}s · Damage dealt: ${Math.round(winner.dmgDealt)} · Hits: ${winner.hits}<br>` +
+      `<span style="color:#666">Power levels were ${winner.power} vs ${loser.power} — the numbers don't lie.</span>`;
+  }, 1400);
+}
+
+// ================= UPDATE =================
+function updateFighter(f, foe, dt) {
+  // knockback decay + idle drift home
+  f.kx *= Math.pow(0.02, dt);
+  if (f.state === 'idle') {
+    f.x += ((f.baseX + f.kx) - f.x) * Math.min(1, dt * 8);
+    f.cooldown -= dt;
+    if (f.cooldown <= 0 && !battleOver) startAttack(f, foe);
+  } else if (f.state === 'dash') {
+    const sp = (f.isSpecial ? 1500 : 950);
+    f.x += Math.sign(f.targetX - f.x) * sp * dt;
+    if (Math.random() < 0.6) particles.push({ x: f.x, y: f.y + (Math.random() - 0.5) * 30,
+      vx: -Math.sign(f.targetX - f.x) * 120, vy: (Math.random() - 0.5) * 60,
+      life: 0.35, t: 0, color: f.color, r: 3 });
+    if (Math.abs(f.targetX - f.x) < 12) { f.state = 'strike'; f.stateT = 0; impact(f, foe); }
+  } else if (f.state === 'strike') {
+    f.stateT += dt;
+    if (f.stateT > 0.12) { f.state = 'return'; }
+  } else if (f.state === 'return') {
+    f.x += ((f.baseX + f.kx) - f.x) * Math.min(1, dt * 6);
+    if (Math.abs(f.x - (f.baseX + f.kx)) < 6) {
+      f.state = 'idle';
+      f.cooldown = cdFor(f) * (0.9 + Math.random() * 0.2);
+    }
+  }
+}
+
+let lastT = 0;
+function loop(now) {
+  rafId = requestAnimationFrame(loop);
+  let dt = Math.min(0.05, (now - lastT) / 1000);
+  lastT = now;
+  if (slowmoT > 0) { slowmoT -= dt; if (slowmoT <= 0) timescale = 1; }
+  const sdt = dt * timescale;
+  if (!battleOver) battleTime += sdt;
+
+  updateFighter(P1, P2, sdt);
+  updateFighter(P2, P1, sdt);
+
+  // particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.t += sdt;
+    if (p.t >= p.life) { particles.splice(i, 1); continue; }
+    p.x += p.vx * sdt; p.y += p.vy * sdt; p.vy += 500 * sdt; p.vx *= Math.pow(0.1, sdt);
+  }
+  for (let i = floats.length - 1; i >= 0; i--) {
+    const fl = floats[i];
+    fl.t += sdt; fl.y -= 60 * sdt;
+    if (fl.t >= fl.life) floats.splice(i, 1);
+  }
+  for (let i = beams.length - 1; i >= 0; i--) {
+    beams[i].t -= sdt;
+    if (beams[i].t <= 0) beams.splice(i, 1);
+  }
+  draw(now / 1000);
+}
+
+// ================= DRAW =================
+function draw(t) {
+  ctx.clearRect(0, 0, W, H);
+  ctx.save();
+  if (shakeT > 0) {
+    shakeT -= 1 / 60;
+    ctx.translate((Math.random() - 0.5) * shakeMag, (Math.random() - 0.5) * shakeMag);
+    if (shakeT <= 0) shakeMag = 0;
+  }
+  // arena backdrop
+  const g = ctx.createRadialGradient(W/2, H*0.55, 40, W/2, H*0.55, Math.max(W,H)*0.7);
+  g.addColorStop(0, '#141428'); g.addColorStop(1, '#05050c');
+  ctx.fillStyle = g; ctx.fillRect(-20, -20, W + 40, H + 40);
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, H * 0.78); ctx.lineTo(W, H * 0.78); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  for (let i = 1; i < 6; i++) { ctx.beginPath(); ctx.moveTo(0, H*0.78 + i*14); ctx.lineTo(W, H*0.78 + i*14); ctx.stroke(); }
+
+  const drawF = f => {
+    const bob = Math.sin(t * 3 + (f.isP1 ? 0 : 2)) * 6;
+    const y = f.y + bob, r = 30;
+    // glow
+    const glow = ctx.createRadialGradient(f.x, y, 4, f.x, y, r * 2.4);
+    glow.addColorStop(0, f.color + 'cc'); glow.addColorStop(1, f.color + '00');
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(f.x, y, r * 2.4, 0, 7); ctx.fill();
+    // body
+    const body = ctx.createRadialGradient(f.x - 8, y - 10, 2, f.x, y, r);
+    body.addColorStop(0, '#ffffff'); body.addColorStop(0.35, f.color); body.addColorStop(1, '#00000088');
+    ctx.fillStyle = body;
+    ctx.beginPath(); ctx.arc(f.x, y, r, 0, 7); ctx.fill();
+    // rotating ring
+    ctx.strokeStyle = f.color + 'aa'; ctx.lineWidth = 2.5;
+    ctx.save(); ctx.translate(f.x, y); ctx.rotate(t * 2 + (f.isP1 ? 0 : 1.5));
+    ctx.beginPath(); ctx.ellipse(0, 0, r + 12, r * 0.42, 0, 0, 7); ctx.stroke(); ctx.restore();
+    // eyes (face the opponent)
+    const dirE = f.isP1 ? 1 : -1;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(f.x + dirE * 4, y - 6, 5, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(f.x + dirE * 15, y - 6, 5, 0, 7); ctx.fill();
+    ctx.fillStyle = '#111';
+    ctx.beginPath(); ctx.arc(f.x + dirE * 5.5, y - 6, 2.4, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(f.x + dirE * 16.5, y - 6, 2.4, 0, 7); ctx.fill();
+    // special ready aura
+    if (f.meter >= 100) {
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(f.x, y, r + 20 + Math.sin(t * 10) * 4, 0, 7); ctx.stroke();
+    }
+    // name
+    ctx.fillStyle = '#fff'; ctx.font = '900 12px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(f.name, f.x, y - r - 26);
+  };
+  drawF(P1); drawF(P2);
+
+  // beams
+  beams.forEach(b => {
+    const a = b.t / b.max;
+    ctx.save(); ctx.globalAlpha = a;
+    ctx.strokeStyle = b.color; ctx.lineCap = 'round';
+    ctx.lineWidth = b.w * a + 6;
+    ctx.beginPath(); ctx.moveTo(b.x1, b.y1); ctx.lineTo(b.x2, b.y2); ctx.stroke();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = (b.w * a + 6) * 0.4;
+    ctx.beginPath(); ctx.moveTo(b.x1, b.y1); ctx.lineTo(b.x2, b.y2); ctx.stroke();
+    ctx.restore();
+  });
+  // particles
+  particles.forEach(p => {
+    ctx.globalAlpha = 1 - p.t / p.life;
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r * (1 - p.t / p.life) + 0.5, 0, 7); ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+  // floats
+  floats.forEach(fl => {
+    ctx.globalAlpha = 1 - fl.t / fl.life;
+    ctx.fillStyle = fl.color;
+    ctx.font = `900 ${fl.big ? 26 : 17}px sans-serif`; ctx.textAlign = 'center';
+    ctx.fillText(fl.txt, fl.x, fl.y);
+  });
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+// ================= INIT =================
+buildGrid();
+resize();
+</script>
+</body>
+</html>

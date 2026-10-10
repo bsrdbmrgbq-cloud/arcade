@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chris's Arcade</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, sans-serif; background: #05050c; color: #fff;
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 30px 16px; }
+  h1 { font-size: 32px; font-weight: 900; letter-spacing: 4px; margin-bottom: 6px;
+    background: linear-gradient(90deg,#f43f5e,#facc15,#22d3ee);
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  p { color: #888; margin-bottom: 26px; }
+  .games { display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 420px; }
+  a.game { display: block; padding: 20px; border-radius: 16px; text-decoration: none; color: #fff;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); }
+  a.game:active { transform: scale(0.97); }
+  a.game .t { font-size: 20px; font-weight: 900; letter-spacing: 1px; }
+  a.game .d { font-size: 13px; color: #999; margin-top: 6px; }
+</style>
+</head>
+<body>
+  <h1>CHRIS'S ARCADE</h1>
+  <p>tap a game to play</p>
+  <div class="games">
+    <a class="game" href="versus-arena.html">
+      <div class="t" style="color:#f43f5e">⚔️ VERSUS ARENA</div>
+      <div class="d">Pick two fighters and watch them battle — beams, specials, slow-mo KOs.</div>
+    </a>
+    <a class="game" href="power-ascension.html">
+      <div class="t" style="color:#facc15">⚡ POWER ASCENSION</div>
+      <div class="d">Tap to raise your power level. Transform from Human all the way to Cosmic.</div>
+    </a>
+  </div>
+</body>
+</html>
